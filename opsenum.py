@@ -1,0 +1,22 @@
+from enum import Enum
+
+class Ops(Enum):
+    ADD         = 'ADD'
+    SUB         = 'SUB'
+    MUL         = 'MUL'
+    DIV         = 'DIV'
+    MATMUL      = 'MATMUL'
+    TRANSPOSE   = 'TRANSPOSE'
+    EXP         = 'EXP'
+    LOG         = 'LOG'
+    LOG10       = 'LOG10'
+    SIN         = 'SIN'
+    COS         = 'COS'
+    TAN         = 'TAN'
+    SQRT        = 'SQRT'
+    ABS         = 'ABS'
+    NEG         = 'NEG'
+    POW         = 'POW'
+    MAX         = 'MAX'
+    MAX_REDUCE  = 'MAX_REDUCE'
+    SUM         = 'SUM'
