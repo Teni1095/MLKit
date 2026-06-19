@@ -16,6 +16,9 @@ class Engine:
         stack = [graph]
         while stack:
             current = stack[-1]
+            if current is None:
+                stack.pop()
+                continue
             left = current.left
             right = current.right
 
@@ -46,7 +49,7 @@ class Engine:
         stack = [(graph, None)]
         while stack:
             current, upstream = stack.pop()
-            if current.left is None and current.right is None:
+            if current.left is None and current.right is None and upstream is not None:
                 self._computeGraph(upstream)
                 grad = upstream.node.data
                 if current.collapsible:
