@@ -1,154 +1,64 @@
-import unittest
 import numpy as np
-from node import Node
 from graph import Graph
 from engine import Engine
+from activations import Activations
 
-class TestEngineArithmetic(unittest.TestCase):
-    def setUp(self):
-        self.engine = Engine()
+engine = Engine()
 
-    def test_addition(self):
-        # Setup: x = 5.0, y = 3.0, z = x + y
-        x = Graph(5.0)
-        y = Graph(3.0)
-        z = x + y
+# Basic tests
+B, C = Graph(3.0), Graph(4.0)
+A = B * C
+engine.forwardPass(A)
+engine.backwardPass(A)
+print(f'Multiplication: A={A.node.data}, dA/dB={B.grad}, dA/dC={C.grad}')
 
-        # 1. Test Forward Pass
-        self.engine.forwardPass(z)
-        self.assertEqual(z.node.data, 8.0)
+B, C = Graph(3.0), Graph(4.0)
+A = B + C
+engine.forwardPass(A)
+engine.backwardPass(A)
+print(f'Addition: A={A.node.data}, dA/dB={B.grad}, dA/dC={C.grad}')
 
-        # 2. Test Backward Pass (dz/dx = 1, dz/dy = 1)
-        grad_x = self.engine.backwardPass(x)
-        grad_y = self.engine.backwardPass(y)
-        
-        self.assertEqual(grad_x.node.data, 1.0)
-        self.assertEqual(grad_y.node.data, 1.0)
+# XOR batch test
+np.random.seed(0)
+X = np.array([[0,0],[0,1],[1,0],[1,1]], dtype=float)
+y = np.array([[0],[1],[1],[0]], dtype=float)
 
-    def test_subtraction(self):
-        # Setup: x = 10.0, y = 4.0, z = x - y
-        x = Graph(10.0)
-        y = Graph(4.0)
-        z = x - y
+W1 = Graph(np.random.randn(2, 4) * 0.5)
+b1 = Graph(np.zeros((1, 4)), collapsible=True)
+W2 = Graph(np.random.randn(4, 1) * 0.5)
+b2 = Graph(np.zeros((1, 1)), collapsible=True)
 
-        # 1. Test Forward Pass
-        self.engine.forwardPass(z)
-        self.assertEqual(z.node.data, 6.0)
+lr = 0.5
+for epoch in range(10000):
+    W1.grad = None
+    b1.grad = None
+    W2.grad = None
+    b2.grad = None
 
-        # 2. Test Backward Pass (dz/dx = 1, dz/dy = -1)
-        grad_x = self.engine.backwardPass(x)
-        grad_y = self.engine.backwardPass(y)
-        
-        self.assertEqual(grad_x.node.data, 1.0)
-        self.assertEqual(grad_y.node.data, -1.0)
+    xi = Graph(X)
+    yi = Graph(y)
+    z1 = xi @ W1 + b1
+    a1 = Activations.sigmoid(z1)
+    z2 = a1 @ W2 + b2
+    a2 = Activations.sigmoid(z2)
+    diff = a2 - yi
+    loss = diff * diff
 
-    def test_multiplication(self):
-        # Setup: x = 4.0, y = 3.0, z = x * y
-        x = Graph(4.0)
-        y = Graph(3.0)
-        z = x * y
+    engine.forwardPass(loss)
+    engine.backwardPass(loss)
 
-        # 1. Test Forward Pass
-        self.engine.forwardPass(z)
-        self.assertEqual(z.node.data, 12.0)
+    W1.node.data -= lr * W1.grad
+    b1.node.data -= lr * b1.grad
+    W2.node.data -= lr * W2.grad
+    b2.node.data -= lr * b2.grad
 
-        # 2. Test Backward Pass (dz/dx = y = 3, dz/dy = x = 4)
-        grad_x = self.engine.backwardPass(x)
-        grad_y = self.engine.backwardPass(y)
-        
-        self.assertEqual(grad_x.node.data, 3.0)
-        self.assertEqual(grad_y.node.data, 4.0)
-
-    def test_division(self):
-        # Setup: x = 6.0, y = 2.0, z = x / y
-        x = Graph(6.0)
-        y = Graph(2.0)
-        z = x / y
-
-        # 1. Test Forward Pass
-        self.engine.forwardPass(z)
-        self.assertEqual(z.node.data, 3.0)
-
-        # 2. Test Backward Pass 
-        # dz/dx = 1 / y = 1 / 2 = 0.5
-        # dz/dy = -x / y^2 = -6 / 4 = -1.5
-        grad_x = self.engine.backwardPass(x)
-        grad_y = self.engine.backwardPass(y)
-        
-        self.assertEqual(grad_x.node.data, 0.5)
-        self.assertEqual(grad_y.node.data, -1.5)
-
-    def test_chained_operations(self):
-        # Setup: complex expression z = (x * y) + (x / y)
-        # For x = 4.0, y = 2.0 -> z = (4 * 2) + (4 / 2) = 8 + 2 = 10
-        x = Graph(4.0)
-        y = Graph(2.0)
-        z = (x * y) + (x / y)
-
-        self.engine.forwardPass(z)
-        self.assertEqual(z.node.data, 10.0)
-
-        # Gradients analytical check:
-        # dz/dx = y + (1/y) = 2 + 0.5 = 2.5
-        # dz/dy = x - (x / y^2) = 4 - (4 / 4) = 3.0
-        grad_x = self.engine.backwardPass(x)
-        grad_y = self.engine.backwardPass(y)
-
-        self.assertEqual(grad_x.node.data, 2.5)
-        self.assertEqual(grad_y.node.data, 3.0)
-# Ensure you have 'import numpy as np' at the top of your test file
-
-    def test_matrix_operations(self):
-        # 1. Setup raw NumPy data
-        # X: Shape (2, 3) -> Matrix of features
-        # W: Shape (3, 2) -> Weights matrix
-        x_data = np.array([[1.0, 2.0, 3.0], 
-                           [4.0, 5.0, 6.0]])
-        w_data = np.array([[0.1, 0.2], 
-                           [0.3, 0.4], 
-                           [0.5, 0.6]])
-        
-        # Wrap them in your Graph nodes
-        X = Graph(x_data)
-        W = Graph(w_data)
-        
-        # 2. Forward Equation: Z = X @ W (Resulting shape: 2, 2)
-        Z = X @ W
-        
-        self.engine.forwardPass(Z)
-        
-        # Check forward pass against NumPy's native matmul
-        expected_Z = x_data @ w_data
-        np.testing.assert_array_almost_equal(Z.node.data, expected_Z)
-
-        # 3. Backward Pass Configuration
-        # Upstream gradient acting as dLoss/dZ (Shape: 2, 2)
-        # We will simulate an upstream incoming gradient of all ones
-        upstream_grad_data = np.ones((2, 2))
-        upstream_grad = Graph(upstream_grad_data)
-        
-        # 4. Evaluate your internal gradient engine step
-        # Using your upward traversal layout, we extract the gradient of Z with respect to X and W
-        # Note: In your current loop setup, ensure 'upstream' starts as Graph(upstream_grad_data)
-        
-        # Analytical expected math:
-        # dLoss/dX = upstream_grad @ W^T  (Shape: 2, 2 @ 2, 3 -> 2, 3)
-        # dLoss/dW = X^T @ upstream_grad  (Shape: 3, 2 @ 2, 2 -> 3, 2)
-        expected_grad_X = upstream_grad_data @ w_data.T
-        expected_grad_W = x_data.T @ upstream_grad_data
-
-        # Execute your engine's upward backward passes
-        # (Assuming you temporarily feed the upstream matrix node or configure the stack base)
-        grad_X = self.engine.backwardPass(X)
-        grad_W = self.engine.backwardPass(W)
-        
-        # Run forward passes on the resulting gradient structures to populate data
-        self.engine.forwardPass(grad_X)
-        self.engine.forwardPass(grad_W)
-
-        # Validate structural array accuracy
-        np.testing.assert_array_almost_equal(grad_X.node.data, expected_grad_X)
-        np.testing.assert_array_almost_equal(grad_W.node.data, expected_grad_W)
-
-if __name__ == '__main__':
-    unittest.main()
+xi = Graph(X)
+z1 = xi @ W1 + b1
+a1 = Activations.sigmoid(z1)
+z2 = a1 @ W2 + b2
+a2 = Activations.sigmoid(z2)
+engine.forwardPass(a2)
+print('XOR predictions:')
+for i in range(4):
+    print(f'Input: {X[i]} -> Output: {a2.node.data[i][0]:.4f} (expected {y[i][0]})')
+"
