@@ -3,7 +3,6 @@ from enum import Enum
 
 class Transforms(Enum):
     RESHAPE          = 'RESHAPE'
-    RESHAPE_INVERSE  = 'RESHAPE_INVERSE'
     BROADCAST_TO     = 'BROADCAST_TO'
     COLLAPSE         = 'COLLAPSE'
     SLICE            = 'SLICE'
@@ -11,7 +10,6 @@ class Transforms(Enum):
     SQUEEZE          = 'SQUEEZE'
     UNSQUEEZE        = 'UNSQUEEZE'
     FLATTEN          = 'FLATTEN'
-    FLATTEN_INVERSE  = 'FLATTEN_INVERSE'
 
 
 class TransformFunctions:
@@ -19,10 +17,6 @@ class TransformFunctions:
     @staticmethod
     def reshape(data, shape):
         return data.reshape(shape)
-
-    @staticmethod
-    def reshape_inverse(data, original_shape):
-        return data.reshape(original_shape)
 
     @staticmethod
     def broadcast_to(data, shape):
@@ -55,7 +49,3 @@ class TransformFunctions:
     @staticmethod
     def flatten(data):
         return data.flatten()
-
-    @staticmethod
-    def flatten_inverse(data, original_shape):
-        return data.reshape(original_shape)
