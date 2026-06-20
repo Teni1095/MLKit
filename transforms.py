@@ -29,12 +29,8 @@ class TransformFunctions:
         return np.broadcast_to(data, shape)
 
     @staticmethod
-    def collapse(data, original_shape):
-        # Sum over broadcast dimensions to collapse back to original shape
-        axis = tuple(range(len(data.shape) - len(original_shape)))
-        keepdims_axes = tuple(i for i, (d, o) in enumerate(zip(data.shape[-len(original_shape):], original_shape)) if o == 1)
-        result = np.sum(data, axis=axis + keepdims_axes, keepdims=True)
-        return result.reshape(original_shape)
+    def collapse(data, axes, keepdims=True):
+        return np.sum(data, axis=tuple(axes), keepdims=keepdims)
 
     @staticmethod
     def slice(data, start, end, axis):
@@ -44,7 +40,6 @@ class TransformFunctions:
 
     @staticmethod
     def pad(data, start, end, axis, original_size):
-        # Pad with zeros where sliced
         pad_width = [(0, 0)] * len(data.shape)
         pad_width[axis] = (start, original_size - end)
         return np.pad(data, pad_width)
