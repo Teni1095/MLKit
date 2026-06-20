@@ -61,4 +61,4 @@ engine.forwardPass(a2)
 print('XOR predictions:')
 for i in range(4):
     print(f'Input: {X[i]} -> Output: {a2.node.data[i][0]:.4f} (expected {y[i][0]})')
-"
+
