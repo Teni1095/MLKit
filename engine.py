@@ -8,8 +8,8 @@ class Engine:
         pass
 
     def _compute(self, graph):
-        left = graph.left.node.data
-        right = graph.right.node.data if graph.right is not None else None
+        left = graph.left.child.node.data
+        right = graph.right.child.node.data if graph.right is not None else None
         graph.node.data = Operations.compute(graph.ops, left, right)
 
     def _computeGraph(self, graph):
@@ -19,8 +19,8 @@ class Engine:
             if current is None:
                 stack.pop()
                 continue
-            left = current.left
-            right = current.right
+            left = current.left.child if current.left is not None else None
+            right = current.right.child if current.right is not None else None
 
             if left is None and right is None:
                 stack.pop()
@@ -42,7 +42,7 @@ class Engine:
         self._computeGraph(graph)
 
     def _getGrad(self, graph, upstream, parent):
-        isLeft = parent.left is graph
+        isLeft = parent.left.child is graph
         return Gradients.compute(parent.ops, upstream, isLeft, parent)
 
     def backwardPass(self, graph):
@@ -60,11 +60,13 @@ class Engine:
                     current.grad = current.grad + grad
             else:
                 if current.left is not None:
-                    left_grad = self._getGrad(current.left, upstream, current)
-                    stack.append((current.left, left_grad))
+                    left_child = current.left.child
+                    left_grad = self._getGrad(left_child, upstream, current)
+                    stack.append((left_child, left_grad))
                 if current.right is not None:
-                    right_grad = self._getGrad(current.right, upstream, current)
-                    stack.append((current.right, right_grad))
+                    right_child = current.right.child
+                    right_grad = self._getGrad(right_child, upstream, current)
+                    stack.append((right_child, right_grad))
 
     def getGradStruct(self, graph, leaves):
         target_set = set(id(leaf) for leaf in leaves)
@@ -75,9 +77,11 @@ class Engine:
             if id(current) in target_set:
                 results.append((current, upstream))
             if current.left is not None:
-                left_grad = self._getGrad(current.left, upstream, current)
-                stack.append((current.left, left_grad))
+                left_child = current.left.child
+                left_grad = self._getGrad(left_child, upstream, current)
+                stack.append((left_child, left_grad))
             if current.right is not None:
-                right_grad = self._getGrad(current.right, upstream, current)
-                stack.append((current.right, right_grad))
+                right_child = current.right.child
+                right_grad = self._getGrad(right_child, upstream, current)
+                stack.append((right_child, right_grad))
         return results

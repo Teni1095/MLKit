@@ -1,32 +1,52 @@
 from node import Node
 from opsenum import Ops
+from link import Link
 
 class Graph:
     def __init__(self, data, collapsible=False):
         self.node = Node(data)
-        self.left = None
-        self.right = None
+        self._left = None
+        self._right = None
         self.parent = []
         self.ops = None
         self.collapsible = collapsible
         self.grad = None
 
+    @property
+    def left(self):
+        return self._left
+
+    @left.setter
+    def left(self, value):
+        self._left = value
+
+    @property
+    def right(self):
+        return self._right
+
+    @right.setter
+    def right(self, value):
+        self._right = value
+
     def _createGraph(self, other, ops):
         g = Graph(None)
-        g.left = self
-        g.right = other
-        g.ops = ops
 
-        self.parent.append(g)
+        left_link = Link(self, g)
+        g.left = left_link
+        self.parent.append(left_link)
+
         if other is not None:
-            other.parent.append(g)
+            right_link = Link(other, g)
+            g.right = right_link
+            other.parent.append(right_link)
 
+        g.ops = ops
         return g
 
     def clone(self):
         g = Graph(self.node.data)
-        g.left = self.left
-        g.right = self.right
+        g._left = self._left
+        g._right = self._right
         g.parent = self.parent
         g.ops = self.ops
         return g

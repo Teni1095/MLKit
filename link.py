@@ -1,5 +1,5 @@
 class Link:
-    def __init__(self, source, target):
-        self.source = source
-        self.target = target
+    def __init__(self, child, parent):
+        self.child = child
+        self.parent = parent
         self.transforms = []
