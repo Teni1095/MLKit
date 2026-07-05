@@ -1,6 +1,7 @@
 from node import Node
 from opsenum import Ops
 from link import Link
+from transforms import Transforms
 
 class Graph:
     def __init__(self, data, collapsible=False):
@@ -11,6 +12,7 @@ class Graph:
         self.ops = None
         self.collapsible = collapsible
         self.grad = None
+        self.transforms = []
 
     @property
     def left(self):
@@ -28,6 +30,22 @@ class Graph:
     def right(self, value):
         self._right = value
 
+    def transform(self, transform, **params):
+        self.transforms.append({
+            "transform": transform,
+            "params": params,
+        })
+        return self
+
+    def _transferTransforms(self, link):
+        if not self.transforms:
+            return
+
+        pending = []
+        while self.transforms:
+            pending.append(self.transforms.pop())
+        link.transforms.extend(pending)
+
     def _createGraph(self, other, ops):
         g = Graph(None)
 
@@ -40,6 +58,10 @@ class Graph:
             g.right = right_link
             other.parent.append(right_link)
 
+        self._transferTransforms(left_link)
+        if other is not None:
+            other._transferTransforms(right_link)
+
         g.ops = ops
         return g
 
@@ -49,6 +71,7 @@ class Graph:
         g._right = self._right
         g.parent = self.parent
         g.ops = self.ops
+        g.transforms = list(self.transforms)
         return g
 
     def clearParents(self):

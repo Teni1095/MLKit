@@ -2,14 +2,29 @@ import numpy as np
 from graph import Graph
 from opsenum import Ops
 from ops import Operations, Gradients
+from transforms import TransformFunctions
 
 class Engine:
     def __init__(self):
         pass
 
+    def _applyTransforms(self, data, link, inverse=False):
+        if data is None or link is None:
+            return data
+
+        for transform in link.transforms:
+            params = transform.get("params", {})
+            view = TransformFunctions.apply(
+                data,
+                transform["transform"],
+                inverse=inverse,
+                **params,
+            )
+        return view
+
     def _compute(self, graph):
-        left = graph.left.child.node.data
-        right = graph.right.child.node.data if graph.right is not None else None
+        left = self._applyTransforms(graph.left.child.node.data if graph.left is not None else None, graph.left)
+        right = self._applyTransforms(graph.right.child.node.data if graph.right is not None else None, graph.right)
         graph.node.data = Operations.compute(graph.ops, left, right)
 
     def _computeGraph(self, graph):
