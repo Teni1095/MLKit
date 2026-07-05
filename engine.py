@@ -14,13 +14,13 @@ class Engine:
 
         for transform in link.transforms:
             params = transform.get("params", {})
-            view = TransformFunctions.apply(
+            data = TransformFunctions.apply(
                 data,
                 transform["transform"],
                 inverse=inverse,
                 **params,
             )
-        return view
+        return data
 
     def _compute(self, graph):
         left = self._applyTransforms(graph.left.child.node.data if graph.left is not None else None, graph.left)
