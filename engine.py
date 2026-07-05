@@ -57,46 +57,10 @@ class Engine:
         self._computeGraph(graph)
 
     def _getGrad(self, graph, upstream, parent):
-        isLeft = parent.left.child is graph
-        return Gradients.compute(parent.ops, upstream, isLeft, parent)
+        return None
 
     def backwardPass(self, graph):
-        stack = [(graph, None)]
-        while stack:
-            current, upstream = stack.pop()
-            if current.left is None and current.right is None and upstream is not None:
-                self._computeGraph(upstream)
-                grad = upstream.node.data
-                if current.collapsible:
-                    grad = np.sum(grad, axis=0, keepdims=True)
-                if current.grad is None:
-                    current.grad = grad
-                else:
-                    current.grad = current.grad + grad
-            else:
-                if current.left is not None:
-                    left_child = current.left.child
-                    left_grad = self._getGrad(left_child, upstream, current)
-                    stack.append((left_child, left_grad))
-                if current.right is not None:
-                    right_child = current.right.child
-                    right_grad = self._getGrad(right_child, upstream, current)
-                    stack.append((right_child, right_grad))
+        return None
 
     def getGradStruct(self, graph, leaves):
-        target_set = set(id(leaf) for leaf in leaves)
-        results = []
-        stack = [(graph, None)]
-        while stack:
-            current, upstream = stack.pop()
-            if id(current) in target_set:
-                results.append((current, upstream))
-            if current.left is not None:
-                left_child = current.left.child
-                left_grad = self._getGrad(left_child, upstream, current)
-                stack.append((left_child, left_grad))
-            if current.right is not None:
-                right_child = current.right.child
-                right_grad = self._getGrad(right_child, upstream, current)
-                stack.append((right_child, right_grad))
-        return results
+        return []
