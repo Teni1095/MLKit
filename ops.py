@@ -45,6 +45,18 @@ class Operations:
             return Operations.max_reduce(left)
         elif ops == Ops.SUM:
             return Operations.sum(left)
+        elif ops == Ops.GE:
+            return Operations.ge(left, right)
+        elif ops == Ops.GT:
+            return Operations.gt(left, right)
+        elif ops == Ops.EQ:
+            return Operations.eq(left, right)
+        elif ops == Ops.SIGN:
+            return Operations.sign(left)
+        elif ops == Ops.ROUND:
+            return Operations.round(left)
+        elif ops == Ops.ARGMAX:
+            return Operations.argmax(left)
 
     @staticmethod
     def add(left, right):
@@ -122,49 +134,85 @@ class Operations:
     def sum(left):
         return np.sum(left)
 
+    @staticmethod
+    def ge(left, right):
+        return np.where(left >= right, 1.0, 0.0)
+
+    @staticmethod
+    def gt(left, right):
+        return np.where(left > right, 1.0, 0.0)
+
+    @staticmethod
+    def eq(left, right):
+        return np.where(left == right, 1.0, 0.0)
+
+    @staticmethod
+    def sign(left):
+        return np.sign(left)
+
+    @staticmethod
+    def round(left):
+        return np.round(left)
+
+    @staticmethod
+    def argmax(left):
+        return np.argmax(left)
+
 
 class Gradients:
 
     @staticmethod
-    def compute(ops, upstream, isLeft, parent):
+    def compute(ops, upstream, isLeft, left, right):
         if ops == Ops.ADD:
             return Gradients.add(upstream, isLeft)
         elif ops == Ops.SUB:
             return Gradients.sub(upstream, isLeft)
         elif ops == Ops.MUL:
-            return Gradients.mul(upstream, isLeft, parent)
+            return Gradients.mul(upstream, isLeft, left, right)
         elif ops == Ops.DIV:
-            return Gradients.div(upstream, isLeft, parent)
+            return Gradients.div(upstream, isLeft, left, right)
         elif ops == Ops.MATMUL:
-            return Gradients.matmul(upstream, isLeft, parent)
+            return Gradients.matmul(upstream, isLeft, left, right)
         elif ops == Ops.TRANSPOSE:
-            return Gradients.transpose(upstream, parent)
+            return Gradients.transpose(upstream, left)
         elif ops == Ops.EXP:
-            return Gradients.exp(upstream, parent)
+            return Gradients.exp(upstream, left)
         elif ops == Ops.LOG:
-            return Gradients.log(upstream, parent)
+            return Gradients.log(upstream, left)
         elif ops == Ops.LOG10:
-            return Gradients.log10(upstream, parent)
+            return Gradients.log10(upstream, left)
         elif ops == Ops.SIN:
-            return Gradients.sin(upstream, parent)
+            return Gradients.sin(upstream, left)
         elif ops == Ops.COS:
-            return Gradients.cos(upstream, parent)
+            return Gradients.cos(upstream, left)
         elif ops == Ops.TAN:
-            return Gradients.tan(upstream, parent)
+            return Gradients.tan(upstream, left)
         elif ops == Ops.SQRT:
-            return Gradients.sqrt(upstream, parent)
+            return Gradients.sqrt(upstream, left)
         elif ops == Ops.ABS:
-            return Gradients.abs(upstream, parent)
+            return Gradients.abs(upstream, left)
         elif ops == Ops.NEG:
             return Gradients.neg(upstream)
         elif ops == Ops.POW:
-            return Gradients.pow(upstream, isLeft, parent)
+            return Gradients.pow(upstream, isLeft, left, right)
         elif ops == Ops.MAX:
-            return Gradients.max(upstream, isLeft, parent)
+            return Gradients.max(upstream, isLeft, left, right)
         elif ops == Ops.MAX_REDUCE:
-            return Gradients.max_reduce(upstream, parent)
+            return Gradients.max_reduce(upstream, left)
         elif ops == Ops.SUM:
-            return Gradients.sum(upstream, parent)
+            return Gradients.sum(upstream, left)
+        elif ops == Ops.GE:
+            return Gradients.ge(isLeft, left, right)
+        elif ops == Ops.GT:
+            return Gradients.gt(isLeft, left, right)
+        elif ops == Ops.EQ:
+            return Gradients.eq(isLeft, left, right)
+        elif ops == Ops.SIGN:
+            return Gradients.sign(left)
+        elif ops == Ops.ROUND:
+            return Gradients.round(left)
+        elif ops == Ops.ARGMAX:
+            return Gradients.argmax(left)
 
     @staticmethod
     def add(upstream, isLeft):
@@ -181,94 +229,92 @@ class Gradients:
         return upstream * grad
 
     @staticmethod
-    def mul(upstream, isLeft, parent):
-        grad = parent.right.child.clone().clearParents() if isLeft else parent.left.child.clone().clearParents()
+    def mul(upstream, isLeft, left, right):
+        grad = right if isLeft else left
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def div(upstream, isLeft, parent):
-        left_clone = parent.left.child.clone().clearParents()
-        right_clone = parent.right.child.clone().clearParents()
+    def div(upstream, isLeft, left, right):
         if isLeft:
-            grad = Graph(1) / right_clone
+            grad = Graph(1) / right
         else:
-            grad = Graph(-1) * left_clone / (right_clone * right_clone)
+            grad = Graph(-1) * left / (right * right)
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def matmul(upstream, isLeft, parent):
+    def matmul(upstream, isLeft, left, right):
         if upstream is None:
             if isLeft:
-                return parent.right.child.clone().clearParents().T
+                return right.T
             else:
-                return parent.left.child.clone().clearParents().T
+                return left.T
         if isLeft:
-            return upstream @ parent.right.child.clone().clearParents().T
+            return upstream @ right.T
         else:
-            return parent.left.child.clone().clearParents().T @ upstream
+            return left.T @ upstream
 
     @staticmethod
-    def transpose(upstream, parent):
+    def transpose(upstream, left):
         if upstream is None:
-            return parent.left.child.clone().clearParents()
+            return left
         return upstream.T
 
     @staticmethod
-    def exp(upstream, parent):
-        grad = parent.left.child.clone().clearParents().exp()
+    def exp(upstream, left):
+        grad = left.exp()
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def log(upstream, parent):
-        grad = Graph(1) / parent.left.child.clone().clearParents()
+    def log(upstream, left):
+        grad = Graph(1) / left
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def log10(upstream, parent):
-        grad = Graph(1) / (parent.left.child.clone().clearParents() * Graph(np.log(10)))
+    def log10(upstream, left):
+        grad = Graph(1) / (left * Graph(np.log(10)))
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def sin(upstream, parent):
-        grad = parent.left.child.clone().clearParents().cos()
+    def sin(upstream, left):
+        grad = left.cos()
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def cos(upstream, parent):
-        grad = Graph(-1) * parent.left.child.clone().clearParents().sin()
+    def cos(upstream, left):
+        grad = Graph(-1) * left.sin()
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def tan(upstream, parent):
-        grad = Graph(1) / (parent.left.child.clone().clearParents().cos().pow(Graph(2)))
+    def tan(upstream, left):
+        grad = Graph(1) / (left.cos().pow(Graph(2)))
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def sqrt(upstream, parent):
-        grad = Graph(1) / (Graph(2) * parent.left.child.clone().clearParents().sqrt())
+    def sqrt(upstream, left):
+        grad = Graph(1) / (Graph(2) * left.sqrt())
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def abs(upstream, parent):
-        grad = parent.left.child.clone().clearParents() / parent.left.child.clone().clearParents().abs()
+    def abs(upstream, left):
+        grad = left / left.abs()
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
@@ -281,40 +327,59 @@ class Gradients:
         return upstream * grad
 
     @staticmethod
-    def pow(upstream, isLeft, parent):
-        left_clone = parent.left.child.clone().clearParents()
-        right_clone = parent.right.child.clone().clearParents()
+    def pow(upstream, isLeft, left, right):
         if isLeft:
-            grad = right_clone * left_clone.pow(right_clone - Graph(1))
+            grad = right * left.pow(right - Graph(1))
         else:
-            grad = parent.clone().clearParents() * left_clone.log()
+            grad = left.pow(right) * left.log()
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def max(upstream, isLeft, parent):
-        left_clone = parent.left.child.clone().clearParents()
-        right_clone = parent.right.child.clone().clearParents()
+    def max(upstream, isLeft, left, right):
         if isLeft:
-            grad = Graph(np.where(left_clone.node.data >= right_clone.node.data, 1.0, 0.0))
+            grad = left.ge(right)
         else:
-            grad = Graph(np.where(right_clone.node.data > left_clone.node.data, 1.0, 0.0))
+            grad = right.gt(left)
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def max_reduce(upstream, parent):
-        left_clone = parent.left.child.clone().clearParents()
-        grad = Graph(np.where(left_clone.node.data == parent.node.data, 1.0, 0.0))
+    def max_reduce(upstream, left):
+        grad = left.eq(left.max())
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
 
     @staticmethod
-    def sum(upstream, parent):
-        grad = Graph(np.ones_like(parent.left.child.node.data))
+    def sum(upstream, left):
+        grad = Graph(np.ones(left.shape))
         if upstream is None:
             return Graph(1) * grad
         return upstream * grad
+
+    @staticmethod
+    def ge(isLeft, left, right):
+        return Graph(np.zeros(left.shape if isLeft else right.shape))
+
+    @staticmethod
+    def gt(isLeft, left, right):
+        return Graph(np.zeros(left.shape if isLeft else right.shape))
+
+    @staticmethod
+    def eq(isLeft, left, right):
+        return Graph(np.zeros(left.shape if isLeft else right.shape))
+
+    @staticmethod
+    def sign(left):
+        return Graph(np.zeros(left.shape))
+
+    @staticmethod
+    def round(left):
+        return Graph(np.zeros(left.shape))
+
+    @staticmethod
+    def argmax(left):
+        return Graph(np.zeros(left.shape))

@@ -79,6 +79,10 @@ class Graph:
         return self
 
     @property
+    def shape(self):
+        return self.node.data.shape
+
+    @property
     def T(self):
         return self._createGraph(None, Ops.TRANSPOSE)
 
@@ -160,3 +164,27 @@ class Graph:
 
     def sum(self):
         return self._createGraph(None, Ops.SUM)
+
+    def ge(self, other):
+        if not isinstance(other, Graph):
+            other = Graph(other)
+        return self._createGraph(other, Ops.GE)
+
+    def gt(self, other):
+        if not isinstance(other, Graph):
+            other = Graph(other)
+        return self._createGraph(other, Ops.GT)
+
+    def eq(self, other):
+        if not isinstance(other, Graph):
+            other = Graph(other)
+        return self._createGraph(other, Ops.EQ)
+
+    def sign(self):
+        return self._createGraph(None, Ops.SIGN)
+
+    def round(self):
+        return self._createGraph(None, Ops.ROUND)
+
+    def argmax(self):
+        return self._createGraph(None, Ops.ARGMAX)
