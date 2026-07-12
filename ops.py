@@ -1,6 +1,5 @@
 import numpy as np
 from opsenum import Ops
-from graph import Graph
 
 
 class Operations:
@@ -214,35 +213,38 @@ class Gradients:
         elif ops == Ops.ARGMAX:
             return Gradients.argmax(left)
 
+    # --- pure-operator ops: already type-unaware via Python's operator
+    # dunders, work identically whether operands are raw data or Graph ---
+
     @staticmethod
     def add(upstream, isLeft):
-        grad = Graph(1)
+        grad = 1
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def sub(upstream, isLeft):
-        grad = Graph(1) if isLeft else Graph(-1)
+        grad = 1 if isLeft else -1
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def mul(upstream, isLeft, left, right):
         grad = right if isLeft else left
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def div(upstream, isLeft, left, right):
         if isLeft:
-            grad = Graph(1) / right
+            grad = 1 / right
         else:
-            grad = Graph(-1) * left / (right * right)
+            grad = -1 * left / (right * right)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
@@ -264,122 +266,125 @@ class Gradients:
         return upstream.T
 
     @staticmethod
-    def exp(upstream, left):
-        grad = left.exp()
+    def neg(upstream):
+        grad = -1
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
+        return upstream * grad
+
+    # --- method-based ops: dispatch through Operations on raw data,
+    # never call Graph methods, never construct Graph ---
+
+    @staticmethod
+    def exp(upstream, left):
+        grad = Operations.exp(left)
+        if upstream is None:
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def log(upstream, left):
-        grad = Graph(1) / left
+        grad = 1 / left
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def log10(upstream, left):
-        grad = Graph(1) / (left * Graph(np.log(10)))
+        grad = 1 / (left * np.log(10))
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def sin(upstream, left):
-        grad = left.cos()
+        grad = Operations.cos(left)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def cos(upstream, left):
-        grad = Graph(-1) * left.sin()
+        grad = -1 * Operations.sin(left)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def tan(upstream, left):
-        grad = Graph(1) / (left.cos().pow(Graph(2)))
+        grad = 1 / (Operations.cos(left) ** 2)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def sqrt(upstream, left):
-        grad = Graph(1) / (Graph(2) * left.sqrt())
+        grad = 1 / (2 * Operations.sqrt(left))
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def abs(upstream, left):
-        grad = left / left.abs()
+        grad = left / Operations.abs(left)
         if upstream is None:
-            return Graph(1) * grad
-        return upstream * grad
-
-    @staticmethod
-    def neg(upstream):
-        grad = Graph(-1)
-        if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def pow(upstream, isLeft, left, right):
         if isLeft:
-            grad = right * left.pow(right - Graph(1))
+            grad = right * Operations.pow(left, right - 1)
         else:
-            grad = left.pow(right) * left.log()
+            grad = Operations.pow(left, right) * Operations.log(left)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def max(upstream, isLeft, left, right):
         if isLeft:
-            grad = left.ge(right)
+            grad = Operations.ge(left, right)
         else:
-            grad = right.gt(left)
+            grad = Operations.gt(right, left)
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def max_reduce(upstream, left):
-        grad = left.eq(left.max())
+        grad = Operations.eq(left, Operations.max_reduce(left))
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def sum(upstream, left):
-        grad = Graph(np.ones(left.shape))
+        grad = np.ones(np.shape(left))
         if upstream is None:
-            return Graph(1) * grad
+            return 1 * grad
         return upstream * grad
 
     @staticmethod
     def ge(isLeft, left, right):
-        return Graph(np.zeros(left.shape if isLeft else right.shape))
+        return np.zeros(np.shape(left) if isLeft else np.shape(right))
 
     @staticmethod
     def gt(isLeft, left, right):
-        return Graph(np.zeros(left.shape if isLeft else right.shape))
+        return np.zeros(np.shape(left) if isLeft else np.shape(right))
 
     @staticmethod
     def eq(isLeft, left, right):
-        return Graph(np.zeros(left.shape if isLeft else right.shape))
+        return np.zeros(np.shape(left) if isLeft else np.shape(right))
 
     @staticmethod
     def sign(left):
-        return Graph(np.zeros(left.shape))
+        return np.zeros(np.shape(left))
 
     @staticmethod
     def round(left):
-        return Graph(np.zeros(left.shape))
+        return np.zeros(np.shape(left))
 
     @staticmethod
     def argmax(left):
-        return Graph(np.zeros(left.shape))
+        return np.zeros(np.shape(left))
