@@ -6,7 +6,6 @@ class Ops(Enum):
     MUL         = 'MUL'
     DIV         = 'DIV'
     MATMUL      = 'MATMUL'
-    TRANSPOSE   = 'TRANSPOSE'
     EXP         = 'EXP'
     LOG         = 'LOG'
     LOG10       = 'LOG10'

@@ -1,18 +1,22 @@
 import numpy as np
+from collections import deque
 from graph import Graph
 from opsenum import Ops
-from ops import Operations, Gradients
+from ops import Operations
+from gradients import Gradients
 from transforms import TransformFunctions
 
 class Engine:
-    def __init__(self):
-        pass
+    def __init__(self, graph):
+        self.root = graph
+        self.round = 0
 
     def _applyTransforms(self, data, link, inverse=False):
         if data is None or link is None:
             return data
 
-        for transform in link.transforms:
+        transforms = reversed(link.transforms) if inverse else link.transforms
+        for transform in transforms:
             params = transform.get("params", {})
             data = TransformFunctions.apply(
                 data,
@@ -26,6 +30,15 @@ class Engine:
         left = self._applyTransforms(graph.left.child.node.data if graph.left is not None else None, graph.left)
         right = self._applyTransforms(graph.right.child.node.data if graph.right is not None else None, graph.right)
         graph.node.data = Operations.compute(graph.ops, left, right)
+        graph.node.computedBy = self
+        graph.node.computedRound = self.round
+
+    def _isStale(self, graph):
+        if graph.left is None and graph.right is None:
+            return False
+        if graph.node.computedBy is None:
+            return True
+        return graph.node.computedBy is self and graph.node.computedRound != self.round
 
     def _computeGraph(self, graph):
         stack = [graph]
@@ -41,8 +54,8 @@ class Engine:
                 stack.pop()
                 continue
 
-            left_ready = left is None or left.node.data is not None
-            right_ready = right is None or right.node.data is not None
+            left_ready = left is None or not self._isStale(left)
+            right_ready = right is None or not self._isStale(right)
 
             if left_ready and right_ready:
                 stack.pop()
@@ -53,14 +66,12 @@ class Engine:
                 if not right_ready:
                     stack.append(right)
 
-    def forwardPass(self, graph):
-        self._computeGraph(graph)
+    def forwardPass(self):
+        self.round += 1
+        self._computeGraph(self.root)
 
-    def _getGrad(self, graph, upstream, parent):
+    def _computeGrad(self, graph, upstream, link):
         return None
 
-    def backwardPass(self, graph):
+    def backwardPass(self):
         return None
-
-    def getGradStruct(self, graph, leaves):
-        return []

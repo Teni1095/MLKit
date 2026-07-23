@@ -11,7 +11,6 @@ class Graph:
         self.parent = []
         self.ops = None
         self.collapsible = collapsible
-        self.grad = None
         self.transforms = []
 
     @property
@@ -41,10 +40,8 @@ class Graph:
         if not self.transforms:
             return
 
-        pending = []
-        while self.transforms:
-            pending.append(self.transforms.pop())
-        link.transforms.extend(pending)
+        link.transforms.extend(self.transforms)
+        self.transforms = []
 
     def _createGraph(self, other, ops):
         g = Graph(None)
@@ -82,9 +79,8 @@ class Graph:
     def shape(self):
         return self.node.data.shape
 
-    @property
-    def T(self):
-        return self._createGraph(None, Ops.TRANSPOSE)
+    def transpose(self, axes=None):
+        return self.transform(Transforms.TRANSPOSE, axes=axes)
 
     def __add__(self, other):
         if not isinstance(other, Graph):

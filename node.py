@@ -1,6 +1,8 @@
 class Node:
     def __init__(self, data):
         self._data = data
+        self.computedBy = None
+        self.computedRound = None
 
     @property
     def data(self):

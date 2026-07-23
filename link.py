@@ -3,3 +3,4 @@ class Link:
         self.child = child
         self.parent = parent
         self.transforms = []
+        self.grad = None
