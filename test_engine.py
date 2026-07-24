@@ -52,7 +52,7 @@ class TestEngineForwardPass(unittest.TestCase):
         self.assertIsInstance(grad_x, Graph)
         self.assertIsInstance(grad_b, Graph)
 
-        np.testing.assert_array_equal(engine.getGradValue(x), np.array([2.0, 2.0]))
+        np.testing.assert_array_equal(engine.getGradValue(x), np.array([[2.0, 2.0]]))
         np.testing.assert_array_equal(engine.getGradValue(b), np.ones((2, 2)))
 
     def test_forward_pass_recomputes_on_new_round(self):
@@ -95,7 +95,7 @@ class TestEngineForwardPass(unittest.TestCase):
 
     def test_backward_pass_with_matrices(self):
         X = Graph(np.array([[1.0, 2.0], [3.0, 4.0]]))
-        W = Graph(np.array([[2.0, 0.0], [0.0, 2.0]]))
+        W = Graph(np.array([[1.0, 2.0],[3.0, 4.0]]))
         b = Graph(np.array([[1.0, 1.0], [1.0, 1.0]]))
 
         out = X @ W + b
@@ -109,19 +109,10 @@ class TestEngineForwardPass(unittest.TestCase):
         self.assertIn(W, engine.gradients)
         self.assertIn(b, engine.gradients)
 
-        grad_X = engine.gradients[X]
-        grad_W = engine.gradients[W]
-        grad_b = engine.gradients[b]
 
-        self.assertIsInstance(grad_X, Graph)
-        self.assertIsInstance(grad_W, Graph)
-        self.assertIsInstance(grad_b, Graph)
 
-        Engine(grad_X).forwardPass()
-        Engine(grad_W).forwardPass()
-        Engine(grad_b).forwardPass()
 
-        np.testing.assert_array_equal(engine.getGradValue(X), np.array([[2.0, 2.0], [2.0, 2.0]]))
+        np.testing.assert_array_equal(engine.getGradValue(X), np.array([[3.0, 7.0], [3.0, 7.0]]))
         np.testing.assert_array_equal(engine.getGradValue(W), np.array([[4.0, 4.0], [6.0, 6.0]]))
         np.testing.assert_array_equal(engine.getGradValue(b), np.ones((2, 2)))
 

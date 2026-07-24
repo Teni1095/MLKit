@@ -103,14 +103,14 @@ class Engine:
                 if left is not None:
                     left_graph = Gradients.compute(current.ops, True, left.node.data, right.node.data if right is not None else None)
                     if current.left.transforms:
-                        left_grad.transforms = current.left.transforms
+                        upstream.transforms = list(current.left.transforms)
                     left_grad = Gradients.combine(current.ops, upstream, left_graph, True)
                     left_tuple = (left, left_grad)
                     stack.append(left_tuple)
                 if right is not None:
                     right_graph = Gradients.compute(current.ops, False, left.node.data if left is not None else None, right.node.data)
                     if current.right.transforms:
-                        right_grad.transforms = current.right.transforms
+                        upstream.transforms = list(current.right.transforms)
                     right_grad = Gradients.combine(current.ops, upstream, right_graph, False)
                     right_tuple = (right, right_grad)
                     stack.append(right_tuple)
