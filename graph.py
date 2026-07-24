@@ -33,6 +33,7 @@ class Graph:
         self.transforms.append({
             "transform": transform,
             "params": params,
+            "original_shape": self.node.data.shape,
         })
         return self
 

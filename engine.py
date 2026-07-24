@@ -26,10 +26,12 @@ class Engine:
         transforms = reversed(link.transforms) if inverse else link.transforms
         for transform in transforms:
             params = transform.get("params", {})
+            original_shape = transform.get("original_shape", {})
             data = TransformFunctions.apply(
                 data,
                 transform["transform"],
                 inverse=inverse,
+                original_shape=original_shape,
                 **params,
             )
         return data
@@ -79,8 +81,9 @@ class Engine:
         self._computeGraph(self.root)
 
     def getGradValue(self, graph):
-        self._computeGraph(graph, inverse=True)
-        return graph.node.data
+        grad_graph = self.gradients[graph];
+        self._computeGraph(grad_graph, inverse=True)
+        return grad_graph.node.data
 
     def _computeGrad(self, graph, upstream, link):
         return None
@@ -98,19 +101,17 @@ class Engine:
             right = current.right.child if current.right is not None else None
             if current not in self.gradients or self.gradients[current] is None:
                 if left is not None:
-                    left_grad = Gradients.compute(current.ops, True, left.node.data, right.node.data if right is not None else None)
+                    left_graph = Gradients.compute(current.ops, True, left.node.data, right.node.data if right is not None else None)
                     if current.left.transforms:
-                        for transform in current.left.transforms:
-                            left_grad.transform(transform["transform"], **transform.get("params", {}))
-                    left_grad = Gradients.combine(current.ops, upstream, left_grad, True)
+                        left_grad.transforms = current.left.transforms
+                    left_grad = Gradients.combine(current.ops, upstream, left_graph, True)
                     left_tuple = (left, left_grad)
                     stack.append(left_tuple)
                 if right is not None:
-                    right_grad = Gradients.compute(current.ops, False, left.node.data if left is not None else None, right.node.data)
+                    right_graph = Gradients.compute(current.ops, False, left.node.data if left is not None else None, right.node.data)
                     if current.right.transforms:
-                        for transform in current.right.transforms:
-                            right_grad.transform(transform["transform"], **transform.get("params", {}))
-                    right_grad = Gradients.combine(current.ops, upstream, right_grad, False)
+                        right_grad.transforms = current.right.transforms
+                    right_grad = Gradients.combine(current.ops, upstream, right_graph, False)
                     right_tuple = (right, right_grad)
                     stack.append(right_tuple)
             self._updateGradient(current, upstream)

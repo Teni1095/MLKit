@@ -52,8 +52,8 @@ class TestEngineForwardPass(unittest.TestCase):
         self.assertIsInstance(grad_x, Graph)
         self.assertIsInstance(grad_b, Graph)
 
-        np.testing.assert_array_equal(engine.getGradValue(grad_x), np.array([2.0, 2.0]))
-        np.testing.assert_array_equal(engine.getGradValue(grad_b), np.ones((2, 2)))
+        np.testing.assert_array_equal(engine.getGradValue(x), np.array([2.0, 2.0]))
+        np.testing.assert_array_equal(engine.getGradValue(b), np.ones((2, 2)))
 
     def test_forward_pass_recomputes_on_new_round(self):
         x = Graph(2.0)
@@ -121,9 +121,9 @@ class TestEngineForwardPass(unittest.TestCase):
         Engine(grad_W).forwardPass()
         Engine(grad_b).forwardPass()
 
-        np.testing.assert_array_equal(grad_X.node.data, np.array([[2.0, 2.0], [2.0, 2.0]]))
-        np.testing.assert_array_equal(grad_W.node.data, np.array([[4.0, 4.0], [6.0, 6.0]]))
-        np.testing.assert_array_equal(grad_b.node.data, np.ones((2, 2)))
+        np.testing.assert_array_equal(engine.getGradValue(X), np.array([[2.0, 2.0], [2.0, 2.0]]))
+        np.testing.assert_array_equal(engine.getGradValue(W), np.array([[4.0, 4.0], [6.0, 6.0]]))
+        np.testing.assert_array_equal(engine.getGradValue(b), np.ones((2, 2)))
 
 
 if __name__ == "__main__":
