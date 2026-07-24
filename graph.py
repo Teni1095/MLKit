@@ -71,6 +71,15 @@ class Graph:
         g.transforms = list(self.transforms)
         return g
 
+    def set(self, other):
+        self.node = other.node
+        self._left = other._left
+        self._right = other._right
+        self.parent = other.parent
+        self.ops = other.ops
+        self.transforms = list(other.transforms)
+        return self
+
     def clearParents(self):
         self.parent = []
         return self

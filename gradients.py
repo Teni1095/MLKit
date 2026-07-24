@@ -58,6 +58,8 @@ class Gradients:
 
     @staticmethod
     def combine(ops, upstream, local, isLeft):
+        if upstream is None:
+            return local
         if ops == Ops.MATMUL:
             return upstream @ local if isLeft else local @ upstream
         return upstream * local
