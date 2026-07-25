@@ -14,7 +14,8 @@ class Engine:
 
     def _updateGradient(self, graph, upstream):
         if graph in self.gradients and self.gradients[graph] is not None:
-            combined = self.gradients[graph] + upstream
+            old = self.gradients[graph].clone()
+            combined = old + upstream
             self.gradients[graph].set(combined)
         else:
             self.gradients[graph] = upstream
@@ -102,14 +103,14 @@ class Engine:
             if current not in self.gradients or self.gradients[current] is None:
                 if left is not None:
                     left_graph = Gradients.compute(current.ops, True, left.node.data, right.node.data if right is not None else None)
-                    if current.left.transforms:
+                    if current.left.transforms and upstream:
                         upstream.transforms = list(current.left.transforms)
                     left_grad = Gradients.combine(current.ops, upstream, left_graph, True)
                     left_tuple = (left, left_grad)
                     stack.append(left_tuple)
                 if right is not None:
                     right_graph = Gradients.compute(current.ops, False, left.node.data if left is not None else None, right.node.data)
-                    if current.right.transforms:
+                    if current.right.transforms and upstream:
                         upstream.transforms = list(current.right.transforms)
                     right_grad = Gradients.combine(current.ops, upstream, right_graph, False)
                     right_tuple = (right, right_grad)
