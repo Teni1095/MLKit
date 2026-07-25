@@ -67,7 +67,7 @@ class Graph:
         g = Graph(self.node.data)
         g._left = self._left
         g._right = self._right
-        g.parent = self.parent
+        g.parent = list(self.parent)
         g.ops = self.ops
         g.transforms = list(self.transforms)
         return g
@@ -76,7 +76,7 @@ class Graph:
         self.node = other.node
         self._left = other._left
         self._right = other._right
-        self.parent = other.parent
+        self.parent = list(other.parent)
         self.ops = other.ops
         self.transforms = list(other.transforms)
         return self
