@@ -5,6 +5,7 @@ from opsenum import Ops
 from ops import Operations
 from gradients import Gradients
 from transforms import TransformFunctions
+from transforms import Transforms
 
 class Engine:
     def __init__(self, graph):
@@ -86,34 +87,33 @@ class Engine:
         self._computeGraph(grad_graph, inverse=True)
         return grad_graph.node.data
 
-    def _computeGrad(self, graph, upstream, link):
-        return None
+    def _isBackpropable(self, graph):
+        if graph.left is None and graph.right is None:
+            return True
+        return graph.node.computedBy is self and graph.node.computedRound == self.round
+
+    def _propagateTo(self, current, link, upstream):
+        if link is None:
+            return None
+        child = link.child
+        if not self._isBackpropable(child):
+            return None
+        isLeft = link is current.left
+        left_data = current.left.child.node.data if current.left is not None else None
+        right_data = current.right.child.node.data if current.right is not None else None
+        local = Gradients.compute(current.ops, isLeft, left_data, right_data)
+        if link.transforms and upstream:
+            upstream.transforms = list(link.transforms)
+        return (child, Gradients.combine(current.ops, upstream, local, isLeft))
 
     def backwardPass(self):
         stack = [(self.root, None)]
         while stack:
-            current_tuple = stack[-1]
-            if current_tuple is None:
-                stack.pop()
-                continue
-            current, upstream = current_tuple
-            stack.pop()
-            left = current.left.child if current.left is not None else None
-            right = current.right.child if current.right is not None else None
+            current, upstream = stack.pop()
             if current not in self.gradients or self.gradients[current] is None:
-                if left is not None:
-                    left_graph = Gradients.compute(current.ops, True, left.node.data, right.node.data if right is not None else None)
-                    if current.left.transforms and upstream:
-                        upstream.transforms = list(current.left.transforms)
-                    left_grad = Gradients.combine(current.ops, upstream, left_graph, True)
-                    left_tuple = (left, left_grad)
-                    stack.append(left_tuple)
-                if right is not None:
-                    right_graph = Gradients.compute(current.ops, False, left.node.data if left is not None else None, right.node.data)
-                    if current.right.transforms and upstream:
-                        upstream.transforms = list(current.right.transforms)
-                    right_grad = Gradients.combine(current.ops, upstream, right_graph, False)
-                    right_tuple = (right, right_grad)
-                    stack.append(right_tuple)
+                for link in (current.left, current.right):
+                    result = self._propagateTo(current, link, upstream)
+                    if result is not None:
+                        stack.append(result)
             self._updateGradient(current, upstream)
         return None

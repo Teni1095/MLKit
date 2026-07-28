@@ -4,13 +4,13 @@ from link import Link
 from transforms import Transforms
 
 class Graph:
-    def __init__(self, data, collapsible=False):
+    def __init__(self, data, broadcast=False):
         self.node = Node(data)
         self._left = None
         self._right = None
         self.parent = []
         self.ops = None
-        self.collapsible = collapsible
+        self.broadcast = broadcast
         self.transforms = []
 
     @property
