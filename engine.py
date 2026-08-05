@@ -21,9 +21,11 @@ class Engine:
         else:
             self.gradients[graph] = upstream
 
-    def _applyTransforms(self, data, link, inverse=False):
+    def _applyTransforms(self, data, link, inverse=False, opposite_shape=None):
         if data is None or link is None:
             return data
+
+        ops = link.parent.ops if link.parent is not None else None
 
         transforms = reversed(link.transforms) if inverse else link.transforms
         for transform in transforms:
@@ -34,13 +36,20 @@ class Engine:
                 transform["transform"],
                 inverse=inverse,
                 original_shape=original_shape,
+                ops=ops,
+                opposite_shape=opposite_shape,
                 **params,
             )
         return data
 
     def _compute(self, graph, inverse=False):
-        left = self._applyTransforms(graph.left.child.node.data if graph.left is not None else None, graph.left, inverse=inverse)
-        right = self._applyTransforms(graph.right.child.node.data if graph.right is not None else None, graph.right, inverse=inverse)
+        left_data = graph.left.child.node.data if graph.left is not None else None
+        right_data = graph.right.child.node.data if graph.right is not None else None
+        left_shape = graph.left.child.node.shape if graph.left is not None else None
+        right_shape = graph.right.child.node.shape if graph.right is not None else None
+
+        left = self._applyTransforms(left_data, graph.left, inverse=inverse, opposite_shape=right_shape)
+        right = self._applyTransforms(right_data, graph.right, inverse=inverse, opposite_shape=left_shape)
         graph.node.data = Operations.compute(graph.ops, left, right)
         graph.node.computedBy = self
         graph.node.computedRound = self.round
