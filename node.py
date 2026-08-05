@@ -1,3 +1,4 @@
+import numpy as np
 class Node:
     def __init__(self, data):
         self._data = data
@@ -11,3 +12,7 @@ class Node:
     @data.setter
     def data(self, value):
         self._data = value
+
+    @property
+    def shape(self):
+        return np.shape(self._data)
